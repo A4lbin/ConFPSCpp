@@ -1,7 +1,11 @@
 ﻿#include <iostream>
 #include <chrono>
+#include <vector>
+#include <algorithm>
+//#include <utility>
 using namespace std;
 
+#include <stdio.h>
 #include <Windows.h>
 
 int nScreenWidth = 120;
@@ -29,13 +33,13 @@ int main()
 	map += L"#..............#";
 	map += L"#..............#";
 	map += L"#..............#";
-	map += L"#.........#....#";
-	map += L"#.........#....#";
 	map += L"#..............#";
 	map += L"#..............#";
 	map += L"#..............#";
-	map += L"#.......#......#";
-	map += L"#.......#......#";
+	map += L"#..............#";
+	map += L"#..............#";
+	map += L"#..............#";
+	map += L"#..............#";
 	map += L"#..............#";
 	map += L"#..............#";
 	map += L"#.....##########";
@@ -85,11 +89,11 @@ int main()
 
 		for (int x = 0; x < nScreenWidth;x++)
 		{
-			// For each column, calculate the projected ray angle into world space
 			float fRayAngle = (fPlayerA - fFOV / 2.0f) + ((float)x / (float)nScreenWidth) * fFOV;
 
 			float fDistanceToWall = 0;
 			bool bHitWall = false;
+			bool bBoundary = false;
 
 			float fEyeX = sinf(fRayAngle);
 			float fEyeY = cosf(fRayAngle);
@@ -111,6 +115,37 @@ int main()
 					if (map[nTestY * nMapWidth + nTestX] == '#')
 					{
 						bHitWall = true;
+						vector<pair<float,float>> p;
+
+						for (int tx = 0; tx < 2;tx++) 
+						{
+							for (int ty = 0;ty < 2;ty++)
+							{
+								float vy = (float)nTestY + ty - fPlayerY;
+								float vx = (float)nTestX + tx - fPlayerX;
+								float d = sqrt(vx * vx + vy * vy);
+								float dot = (fEyeX * vx / d) + (fEyeY * vy / d);
+								p.push_back(make_pair(d, dot));
+							}
+							
+							sort(p.begin(), p.end(), [](const pair<float, float>& left, const pair<float, float>& right) {return left.first < right.first;});
+							
+							float fBound = 0.01;
+							//cout << "p.size() = " << p.size() << endl;
+							if (acos(p.at(0).second) < fBound)
+							{
+								bBoundary = true;
+							}
+							if (acos(p.at(1).second) < fBound)
+							{
+								bBoundary = true;
+							}
+							//if (acos(p.at(2).second) < fBound)
+							//{
+							//	bBoundary = true;
+							//}
+						}
+
 
 					}
 				}
@@ -167,6 +202,8 @@ int main()
 					else {
 						nShade = ' ';
 					}
+
+					if (bBoundary) nShade = ' ';
 					screen[y * nScreenWidth + x] = nShade;
 
 				}
@@ -183,6 +220,16 @@ int main()
 
 				}
 			}
+			swprintf_s(screen, 40, L"X=%3.2f, Y=%3.2f, A=%3.2f FPS=%3.2f ", fPlayerX, fPlayerY, fPlayerA, 1.0f / fElapsedTime);
+			
+			// Display Map
+			for (int nx = 0; nx < nMapWidth; nx++)
+				for (int ny = 0; ny < nMapWidth; ny++)
+				{
+					screen[(ny + 1) * nScreenWidth + nx] = map[(nMapHeight-1-ny) * nMapWidth + nx];
+				}
+			screen[(nMapHeight - (int)fPlayerY) * nScreenWidth + (int)fPlayerX] = 'P';
+
 			// Display Frame
 			screen[nScreenWidth * nScreenHeight - 1] = '\0';
 			WriteConsoleOutputCharacter(hConsole, screen, nScreenWidth * nScreenHeight, { 0,0 }, &dwBytesWritten);
