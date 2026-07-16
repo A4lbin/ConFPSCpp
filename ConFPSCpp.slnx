@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="ConFPS/ConFPS.vcxproj" />
+  <Project Path="ConFPS/ConFPS.vcxproj" Id="f0e33444-7570-4584-ab88-05ad93fb0681" />
 </Solution>
